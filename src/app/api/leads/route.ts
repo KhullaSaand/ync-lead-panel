@@ -2,6 +2,35 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
+function corsHeaders(origin: string | null) {
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+  if (origin) {
+    headers['Access-Control-Allow-Origin'] = origin;
+  }
+  return headers;
+}
+
+const ALLOWED_ORIGINS = [
+  'https://yournextcourier.com',
+  'http://localhost:4321',
+];
+
+function getAllowedOrigin(req: NextRequest): string | null {
+  const origin = req.headers.get('origin');
+  if (origin && ALLOWED_ORIGINS.some(o => origin.startsWith(o))) {
+    return origin;
+  }
+  return ALLOWED_ORIGINS[0];
+}
+
+export async function OPTIONS(request: NextRequest) {
+  const origin = getAllowedOrigin(request);
+  return new NextResponse(null, { status: 204, headers: corsHeaders(origin) });
+}
+
 // GET - List leads (with optional category filter)
 export async function GET(request: NextRequest) {
   try {
@@ -57,13 +86,14 @@ export async function GET(request: NextRequest) {
 // POST - Create a new lead
 export async function POST(request: NextRequest) {
   try {
+    const origin = getAllowedOrigin(request);
     const body = await request.json();
     const { formName, category, source, formData, status, assigned } = body;
 
     if (!formName || !category || !formData) {
       return NextResponse.json(
         { error: 'formName, category, and formData are required' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders(origin) }
       );
     }
 
@@ -78,12 +108,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(lead, { status: 201 });
+    return NextResponse.json(lead, { status: 201, headers: corsHeaders(origin) });
   } catch (error) {
     console.error('Error creating lead:', error);
+    const origin = getAllowedOrigin(request);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders(origin) }
     );
   }
 }
