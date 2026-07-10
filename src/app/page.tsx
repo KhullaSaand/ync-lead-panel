@@ -23,7 +23,7 @@ export default async function DashboardPage() {
     _count: { id: true },
   });
 
-  const countMap = counts.reduce((acc, item) => {
+  const countMap = counts.reduce<Record<string, number>>((acc, item) => {
     acc[item.category] = item._count.id;
     return acc;
   }, {} as Record<string, number>);
