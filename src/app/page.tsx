@@ -18,15 +18,12 @@ export default async function DashboardPage() {
   if (!session?.user) redirect('/login');
 
   // Get lead counts per category
-  const counts = await prisma.lead.groupBy({
-    by: ['category'],
-    _count: { id: true },
-  });
-
+  const categoryIds = ['quote', 'book-shipment', 'contact', 'customs', 'warehousing', 'packing-moving'];
   const countMap: Record<string, number> = {};
-  counts.forEach((item) => {
-    countMap[item.category] = item._count.id;
-  });
+  
+  for (const cat of categoryIds) {
+    countMap[cat] = await prisma.lead.count({ where: { category: cat } });
+  }
 
   // Get total leads
   const totalLeads = await prisma.lead.count();
